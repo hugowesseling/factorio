@@ -67,7 +67,7 @@ const EMPTY_STATS: WorldStats = {
 };
 
 export class WorldStore {
-  readonly seed: number;
+  private worldSeed: number;
   private chunks = new Map<string, TerrainChunk>();
   private entities = new Map<number, Entity>();
   private beltItems: BeltItem[] = [];
@@ -77,7 +77,22 @@ export class WorldStore {
   private events: string[] = [];
 
   constructor(seed: number) {
-    this.seed = seed;
+    this.worldSeed = seed;
+  }
+
+  get seed(): number {
+    return this.worldSeed;
+  }
+
+  reset(seed: number): void {
+    this.worldSeed = seed;
+    this.chunks.clear();
+    this.entities.clear();
+    this.beltItems = [];
+    this.players.clear();
+    this.stats = EMPTY_STATS;
+    this.snapshot = { tick: 0, hash: 0 };
+    this.events = [];
   }
 
   chunk(chunk: ChunkPos): TerrainChunk {

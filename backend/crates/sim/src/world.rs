@@ -1005,6 +1005,23 @@ impl World {
         std::mem::take(&mut self.events)
     }
 
+    pub fn entity_placements(&self) -> Vec<(EntityKind, u32, i32, i32)> {
+        let mut placements = Vec::new();
+        for (index, belt) in self.belts.iter() {
+            placements.push((EntityKind::Belt, index, belt.pos.x, belt.pos.y));
+        }
+        for (index, inserter) in self.inserters.iter() {
+            placements.push((EntityKind::Inserter, index, inserter.pos.x, inserter.pos.y));
+        }
+        for (index, machine) in self.machines.iter() {
+            placements.push((EntityKind::Machine, index, machine.pos.x, machine.pos.y));
+        }
+        for (index, player) in self.players.iter() {
+            placements.push((EntityKind::Player, index, player.pos.x, player.pos.y));
+        }
+        placements
+    }
+
     pub fn player(&self, index: u32) -> Option<&Player> {
         self.players.get(index)
     }

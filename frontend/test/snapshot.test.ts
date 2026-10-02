@@ -11,8 +11,8 @@ import {
 import type { ServerMessage } from "../src/net/protocol";
 import { EntityKind, WorldStore } from "../src/state/world";
 
-function event(code: EventCode, a: number, b = 0, c = 0, tick = 1): ServerMessage {
-  return { tag: "event", tick, code, a, b, c };
+function event(code: EventCode, a: number, b = 0, c = 0, tick = 1, d = 0): ServerMessage {
+  return { tag: "event", tick, code, a, b, c, d };
 }
 
 describe("SnapshotClock", () => {
@@ -112,8 +112,8 @@ describe("applyServerMessage", () => {
   it("logs events without mutating the world on its own", () => {
     const world = new WorldStore(7);
     const clock = new SnapshotClock(() => 0);
-    applyServerMessage(world, clock, event(EventCode.TileMined, 4, 25, 12));
-    expect(world.recentEvents.at(-1)).toBe("t1 mined item 4 x25 at 12");
+    applyServerMessage(world, clock, event(EventCode.TileMined, 4, 25, 9, 1, 2));
+    expect(world.recentEvents.at(-1)).toBe("t1 mined item 9 x2 at 4,25");
   });
 
   it("keeps only a bounded log", () => {
@@ -142,10 +142,16 @@ describe("event decoding", () => {
   });
 
   it("builds an entity from a placement event", () => {
-    const entity = entityFromEvent(event(EventCode.EntityPlaced, EntityKind.Machine, 4, 9));
-    expect(entity?.kind).toBe(EntityKind.Machine);
-    expect(entity?.index).toBe(4);
-    expect(entity?.label).toBe("machine");
+    const entity = entityFromEvent(event(EventCode.EntityPlaced, EntityKind.Machine, 4, 9, 1, -3));
+    expect(entity).toEqual({
+      kind: EntityKind.Machine,
+      index: 4,
+      x: 9,
+      y: -3,
+      prototype: 0,
+      rotation: 0,
+      label: "machine",
+    });
   });
 
   it("returns null for events that are not entities", () => {

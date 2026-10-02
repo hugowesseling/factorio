@@ -90,7 +90,7 @@ fn main() {
     ));
     entries.push((
         "server_event".to_string(),
-        ServerMessage::Event { tick: 7, code: 3, a: -1, b: 0, c: 9 }.encode(),
+        ServerMessage::Event { tick: 7, code: 3, a: -1, b: 0, c: 9, d: -42 }.encode(),
     ));
     entries.push((
         "server_pong".to_string(),

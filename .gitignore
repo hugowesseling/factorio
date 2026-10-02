@@ -1,3 +1,4 @@
 backend/target/debug/*
 backend/target/release/*
 frontend/node_modules/*
+.run/

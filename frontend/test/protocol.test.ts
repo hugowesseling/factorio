@@ -68,7 +68,7 @@ describe("byte-for-byte parity with the Rust encoder", () => {
   const serverCases: [string, ServerMessage][] = [
     ["server_hello", { tag: "hello", version: 1, seed: 42 }],
     ["server_snapshot", { tag: "snapshot", tick: 600, hash: 0xdeadbeef }],
-    ["server_event", { tag: "event", tick: 7, code: 3, a: -1, b: 0, c: 9 }],
+    ["server_event", { tag: "event", tick: 7, code: 3, a: -1, b: 0, c: 9, d: -42 }],
     ["server_pong", { tag: "pong", stamp: 12 }],
   ];
 
@@ -140,7 +140,7 @@ describe("framing", () => {
   });
 
   it("rejects truncated payloads", () => {
-    const encoded = encodeServerMessage({ tag: "event", tick: 1, code: 1, a: 1, b: 2, c: 3 });
+    const encoded = encodeServerMessage({ tag: "event", tick: 1, code: 1, a: 1, b: 2, c: 3, d: 4 });
     expect(() => decodeServerMessage(encoded.subarray(0, encoded.length - 1))).toThrow();
   });
 

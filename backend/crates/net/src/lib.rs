@@ -1,3 +1,5 @@
+pub mod ws;
+
 use factorio_proto::{frame, ClientMessage, Error, ServerMessage};
 
 pub const MAX_FRAME_BYTES: usize = 1 << 16;

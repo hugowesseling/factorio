@@ -1,6 +1,6 @@
 import type { ConnectionInfo } from "../net/connection";
 import type { WorldStats } from "../state/world";
-import { formatNumber, setClass, setText } from "./dom";
+import { formatNumber, formatTick, setClass, setText } from "./dom";
 import type { TileData, TilePos } from "../sim/terrain";
 
 export interface HudElements {
@@ -30,13 +30,17 @@ export class Hud {
 
   update(state: HudState): void {
     const { connection, stats } = state;
-    setText(this.elements.connection, connection.state);
-    setClass(this.elements.connection, "is-open", connection.state === "open");
-    setClass(this.elements.connection, "is-error", connection.state === "failed");
-    setText(this.elements.connectionDetail, connectionDetail(connection));
+    const demo = state.demo && connection.state === "idle";
+    setText(this.elements.connection, demo ? "demo" : connection.state);
+    setClass(this.elements.connection, "is-open", !demo && connection.state === "open");
+    setClass(this.elements.connection, "is-error", !demo && connection.state === "failed");
+    setText(
+      this.elements.connectionDetail,
+      demo ? "offline demo world, press C to connect a server" : connectionDetail(connection),
+    );
 
-    setText(this.elements.tick, formatNumber(stats.tick));
-    setText(this.elements.tickClock, stats.tick.toLocaleString("en-US"));
+    setText(this.elements.tick, `tick ${formatNumber(stats.tick)}`);
+    setText(this.elements.tickClock, formatTick(stats.tick));
     setText(this.elements.power, powerText(stats));
     setText(this.elements.position, `${state.player.x}, ${state.player.y}`);
     setText(this.elements.mode, state.demo ? "demo" : "live");

@@ -86,6 +86,36 @@ describe("WorldStore entities", () => {
   });
 });
 
+describe("WorldStore reset", () => {
+  it("adopts a new seed and clears terrain, entities, stats, and events", () => {
+    const world = new WorldStore(7);
+    world.chunk({ x: 0, y: 0 });
+    world.upsertEntity(entity({ kind: EntityKind.Player, index: 0, x: 1, y: 1 }));
+    world.setBeltItems([{ x: 0, y: 0, slot: 0, item: 0, progress: 0 }]);
+    world.setStats({ tick: 12, hash: 99, powerProduced: 1, powerConsumed: 2 });
+    world.setSnapshot({ tick: 12, hash: 99 });
+    world.pushEvent("hello");
+    expect(world.residentChunks).toBe(1);
+
+    world.reset(1234);
+
+    expect(world.seed).toBe(1234);
+    expect(world.residentChunks).toBe(0);
+    expect(world.entityAt({ x: 1, y: 1 })).toBeUndefined();
+    expect(world.playerCount).toBe(0);
+    expect(world.allBeltItems).toHaveLength(0);
+    expect(world.currentStats).toEqual({ tick: 0, hash: 0, powerProduced: 0, powerConsumed: 0 });
+    expect(world.currentSnapshot).toEqual({ tick: 0, hash: 0 });
+    expect(world.recentEvents).toHaveLength(0);
+  });
+
+  it("regenerates terrain from the adopted seed", () => {
+    const world = new WorldStore(7);
+    world.reset(99);
+    expect(world.tile({ x: 3, y: 5 })).toEqual(new WorldStore(99).tile({ x: 3, y: 5 }));
+  });
+});
+
 describe("WorldStore belt items", () => {
   it("copies the list it is given", () => {
     const world = new WorldStore(7);

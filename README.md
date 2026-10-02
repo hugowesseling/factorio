@@ -34,10 +34,29 @@ npm install
 npm run dev
 ```
 
-Then open <http://localhost:5173>. The client boots its own demo world — real
-terrain generation, a small factory, a 60 Hz tick loop — and only attempts a
-server connection when you press `C`, because the backend does not listen on a
-socket yet.
+Then open <http://localhost:5173>. The client boots its own demo world, then
+connects to the backend automatically: once the handshake lands it adopts the
+server's seed and goes live. While no server is reachable it keeps running the
+demo world, so the page is never blank. Start the backend in listener mode so
+there is something to connect to:
+
+```sh
+cd backend
+cargo run -p factorio-server -- --serve
+```
+
+It listens on `ws://127.0.0.1:9000/ws`, which is exactly what the client dials.
+
+There is also a convenience script that starts both halves together:
+
+```sh
+./run.sh                # listener + dev server, Ctrl-C stops both
+./run.sh --batch        # batch backend + dev server
+./run.sh --help         # all options
+```
+
+With the listener running, the browser client connects automatically on load and
+goes live.
 
 Each half is run from its own directory on purpose: Cargo builds the backend
 workspace from `backend/`, and Vite treats `frontend/` as its root. The
@@ -126,7 +145,7 @@ cd backend
 
 cargo build              # debug build
 cargo build --release    # optimized (opt-level 3 + LTO)
-cargo test --workspace   # 69 tests across the 7 crates
+cargo test --workspace   # 98 tests across the 7 crates
 ```
 
 ### The headless server
@@ -156,6 +175,30 @@ mkdir -p /tmp/factorio-run && cd /tmp/factorio-run
 /path/to/backend/target/release/factorio-server 7 2 600
 ```
 
+#### The listener
+
+Pass `--serve` to run a WebSocket listener instead of the batch simulation. It
+takes an optional address (default `127.0.0.1:9000`), seed and view radius, and
+runs at a fixed 60 Hz until interrupted:
+
+```sh
+cargo run -p factorio-server -- --serve                       # 127.0.0.1:9000, seed 7
+cargo run -p factorio-server -- --serve 0.0.0.0:9000 8 3
+```
+
+```
+factorio-server listening on ws://127.0.0.1:9000 seed=7
+serve: client 1 connected from 127.0.0.1:52344 (1 total)
+```
+
+Clients use the binary protocol from `crates/proto` over WebSocket frames. The
+handshake and framing are hand-written in `crates/net` (`ws.rs`) because the
+backend has no third-party crates. A client sends `Hello`, `Intent` and `Ping`
+messages; the server answers with `Hello` plus a replay of every existing
+entity, then broadcasts a `Snapshot` every 6 ticks and an `Event` for each
+simulation event. The browser client in `frontend/` speaks this protocol and
+connects automatically on load (press `C` to toggle).
+
 ### The web client
 
 `frontend/` is a Vite + TypeScript project with no runtime dependencies, using
@@ -166,13 +209,14 @@ cd frontend
 
 npm install
 npm run dev        # http://localhost:5173
-npm test           # 268 tests
+npm test           # 274 tests
 npm run build      # typecheck, then bundle into dist/
 ```
 
-The backend does not listen on a socket yet, so the client boots a demo world —
-real terrain generation on a fixed seed, a small factory layout, and a 60 Hz tick
-loop — and only talks to a server when you press `C`. See
+The client boots a demo world — real terrain generation on a fixed seed, a small
+factory layout, and a 60 Hz tick loop — and only talks to a server when you press
+`C`. On connect it adopts the server's seed, rebuilds terrain from it, and follows
+the authoritative tick. See
 [frontend/README.md](frontend/README.md) for the controls, the module layout, and
 how the protocol, terrain, and content fixtures are regenerated from the backend
 so the two halves cannot drift apart.
@@ -199,9 +243,9 @@ up a wall clock, a floating-point accumulation, or a hash-map iteration order.
 | `crates/sim` | the deterministic simulation: terrain, entity pools, belts, inserters, machines, fluids, power, research, and the fixed phase order in `tick.rs` |
 | `crates/world` | chunk streaming around a focus point, releasing empty chunks |
 | `crates/proto` | binary message encoding for client/server intent and snapshots |
-| `crates/net` | framed transport and sessions |
+| `crates/net` | framed transport, sessions, and a hand-written WebSocket handshake/frame codec (`ws.rs`) |
 | `crates/persistence` | save capture, serialization, restore, and migration validation |
-| `crates/server` | server wiring: intent validation, ticking, events, and save integration |
+| `crates/server` | server wiring: intent validation, ticking, events, save integration, and the `--serve` listener |
 
 Content lives in `crates/content/content/*.toml` and is compiled into the binary
 with `include_str!`, so the server does not read anything from disk at startup

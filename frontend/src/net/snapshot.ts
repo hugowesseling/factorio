@@ -116,7 +116,7 @@ export function entityFromEvent(message: ServerMessage): Entity | null {
       kind: message.a as EntityKind,
       index: message.b,
       x: message.c,
-      y: 0,
+      y: message.d,
       prototype: 0,
       rotation: 0,
       label: kindName(message.a),
@@ -170,11 +170,11 @@ export function describeEvent(message: ServerMessage): string {
     case EventCode.PlayerMoved:
       return `t${message.tick} player ${message.a} moved to ${message.b},${message.c}`;
     case EventCode.EntityPlaced:
-      return `t${message.tick} placed ${kindName(message.a)} #${message.b}`;
+      return `t${message.tick} placed ${kindName(message.a)} #${message.b} at ${message.c},${message.d}`;
     case EventCode.EntityRemoved:
       return `t${message.tick} removed ${kindName(message.a)} #${message.b}`;
     case EventCode.TileMined:
-      return `t${message.tick} mined item ${message.a} x${message.b} at ${message.c}`;
+      return `t${message.tick} mined item ${message.c} x${message.d} at ${message.a},${message.b}`;
     case EventCode.MachineProduced:
       return `t${message.tick} machine #${message.a} made item ${message.b} x${message.c}`;
     case EventCode.ResearchProgress:

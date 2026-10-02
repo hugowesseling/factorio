@@ -42,7 +42,15 @@ export type ClientMessage =
 export type ServerMessage =
   | { readonly tag: "hello"; readonly version: number; readonly seed: number }
   | { readonly tag: "snapshot"; readonly tick: number; readonly hash: number }
-  | { readonly tag: "event"; readonly tick: number; readonly code: number; readonly a: number; readonly b: number; readonly c: number }
+  | {
+      readonly tag: "event";
+      readonly tick: number;
+      readonly code: number;
+      readonly a: number;
+      readonly b: number;
+      readonly c: number;
+      readonly d: number;
+    }
   | { readonly tag: "pong"; readonly stamp: number };
 
 export class ProtocolError extends Error {}
@@ -249,6 +257,7 @@ export function encodeServerMessage(message: ServerMessage): Uint8Array {
       writer.i32(message.a);
       writer.i32(message.b);
       writer.i32(message.c);
+      writer.i32(message.d);
       break;
     case "pong":
       writer.u8(4);
@@ -273,6 +282,7 @@ export function decodeServerMessage(bytes: Uint8Array): ServerMessage {
         a: reader.i32(),
         b: reader.i32(),
         c: reader.i32(),
+        d: reader.i32(),
       };
     case 4:
       return { tag: "pong", stamp: reader.varint() };

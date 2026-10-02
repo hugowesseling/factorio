@@ -4,6 +4,7 @@ import type { TilePos } from "../sim/terrain";
 
 export interface InputOptions {
   readonly target: EventTarget;
+  readonly keyTarget?: EventTarget;
   readonly camera: Camera;
   readonly onHotbar: (slot: number) => void;
   readonly onToggleGrid: () => void;
@@ -94,7 +95,9 @@ export class InputController {
 
   private listen(): void {
     const target = this.options.target;
+    const keyTarget = this.options.keyTarget ?? target;
     const on = <K extends keyof WindowEventMap>(
+      scope: EventTarget,
       type: K,
       handler: (event: WindowEventMap[K]) => void,
       options?: AddEventListenerOptions,
@@ -102,11 +105,15 @@ export class InputController {
       const listener = (event: Event): void => {
         handler(event as WindowEventMap[K]);
       };
-      target.addEventListener(type, listener as EventListener, options);
-      this.detachers.push(() => target.removeEventListener(type, listener as EventListener, options));
+      scope.addEventListener(type, listener as EventListener, options);
+      this.detachers.push(() => scope.removeEventListener(type, listener as EventListener, options));
     };
+    const onKeys = <K extends keyof WindowEventMap>(
+      type: K,
+      handler: (event: WindowEventMap[K]) => void,
+    ): void => on(keyTarget, type, handler);
 
-    on("keydown", event => {
+    onKeys("keydown", event => {
       if (isTypingTarget(event.target)) {
         return;
       }
@@ -152,16 +159,16 @@ export class InputController {
       }
     });
 
-    on("keyup", event => {
+    onKeys("keyup", event => {
       this.held.delete(event.code);
     });
 
-    on("blur", () => {
+    onKeys("blur", () => {
       this.held.clear();
       this.panning = false;
     });
 
-    on("pointermove", event => {
+    on(target, "pointermove", event => {
       const rect = this.rect();
       this.pointerX = event.clientX - rect.left;
       this.pointerY = event.clientY - rect.top;
@@ -180,7 +187,7 @@ export class InputController {
       }
     });
 
-    on("pointerdown", event => {
+    on(target, "pointerdown", event => {
       if (event.button === 1 || (event.button === 0 && event.shiftKey)) {
         this.panning = true;
         this.lastPanX = event.clientX;
@@ -202,15 +209,16 @@ export class InputController {
     const endPan = (): void => {
       this.panning = false;
     };
-    on("pointerup", endPan);
-    on("pointercancel", endPan);
+    on(target, "pointerup", endPan);
+    on(target, "pointercancel", endPan);
 
-    on("pointerleave", () => {
+    on(target, "pointerleave", () => {
       this.pointerInside = false;
       this.panning = false;
     });
 
     on(
+      target,
       "wheel",
       event => {
         event.preventDefault();
@@ -219,7 +227,7 @@ export class InputController {
       { passive: false },
     );
 
-    on("contextmenu", event => event.preventDefault());
+    on(target, "contextmenu", event => event.preventDefault());
   }
 
   private rect(): { left: number; top: number; width: number; height: number } {

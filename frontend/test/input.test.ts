@@ -244,3 +244,39 @@ describe("hover mapping", () => {
     expect(after.x).toBe(before.x + 10);
   });
 });
+
+describe("keyboard scope", () => {
+  it("listens for keys on the window rather than the canvas", () => {
+    const canvasTarget = new EventTarget() as EventTarget & Partial<HTMLElement>;
+    Object.assign(canvasTarget, { tagName: "CANVAS" });
+    const keyTarget = new EventTarget();
+    const actions: string[] = [];
+    const controller = new InputController({
+      target: canvasTarget,
+      keyTarget,
+      camera: createCamera(800, 600),
+      onHotbar: () => {},
+      onToggleGrid: () => {},
+      onToggleConnection: () => {},
+      onCycleBuild: () => {},
+      onCancel: () => {},
+      onAction: (action) => actions.push(action),
+    });
+
+    const press = (): void => {
+      const event = new Event("keydown", { bubbles: true, cancelable: true });
+      Object.assign(event, { code: "Space" });
+      canvasTarget.dispatchEvent(event);
+    };
+
+    press();
+    expect(actions).toHaveLength(0);
+
+    const onWindow = new Event("keydown", { bubbles: true, cancelable: true });
+    Object.assign(onWindow, { code: "Space" });
+    keyTarget.dispatchEvent(onWindow);
+    expect(actions).toEqual(["rotate"]);
+
+    controller.dispose();
+  });
+});

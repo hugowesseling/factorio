@@ -1,3 +1,5 @@
+pub mod serve;
+
 use factorio_content::Content;
 use factorio_net::SessionRegistry;
 use factorio_persistence::SaveFile;
@@ -114,8 +116,25 @@ impl GameServer {
         self.sessions.broadcast(message)
     }
 
+    pub fn entity_replay(&self) -> Vec<ServerMessage> {
+        self.world
+            .entity_placements()
+            .into_iter()
+            .map(|(kind, index, x, y)| {
+                self.event_message(&Event::EntityPlaced { kind, index, x, y })
+            })
+            .collect()
+    }
+
     pub fn event_message(&self, event: &Event) -> ServerMessage {
-        ServerMessage::Event { tick: self.world.tick, code: event_code(event), a: event_a(event), b: event_b(event), c: event_c(event) }
+        ServerMessage::Event {
+            tick: self.world.tick,
+            code: event_code(event),
+            a: event_a(event),
+            b: event_b(event),
+            c: event_c(event),
+            d: event_d(event),
+        }
     }
 }
 
@@ -136,7 +155,7 @@ pub fn event_code(event: &Event) -> u8 {
 pub fn event_a(event: &Event) -> i32 {
     match event {
         Event::PlayerMoved { player, .. } => *player as i32,
-        Event::EntityPlaced { index, .. } | Event::EntityRemoved { index, .. } => *index as i32,
+        Event::EntityPlaced { kind, .. } | Event::EntityRemoved { kind, .. } => *kind as i32,
         Event::TileMined { x, .. } => *x,
         Event::MachineProduced { machine, .. } => *machine as i32,
         Event::ResearchProgress { tech, .. } | Event::ResearchCompleted { tech, .. } => *tech as i32,
@@ -148,22 +167,41 @@ pub fn event_a(event: &Event) -> i32 {
 pub fn event_b(event: &Event) -> i32 {
     match event {
         Event::PlayerMoved { x, .. } => *x,
-        Event::EntityPlaced { x, .. } => *x,
-        Event::EntityRemoved { .. } => 0,
+        Event::EntityPlaced { index, .. } | Event::EntityRemoved { index, .. } => *index as i32,
         Event::TileMined { y, .. } => *y,
-        Event::MachineProduced { count, .. } => *count as i32,
+        Event::MachineProduced { item, .. } => *item as i32,
         Event::ResearchProgress { progress, .. } => *progress as i32,
-        Event::ResearchCompleted { .. } => 1,
-        Event::WaterExtracted { .. } => 0,
-        Event::TickCompleted { .. } => 0,
+        Event::ResearchCompleted { .. }
+        | Event::WaterExtracted { .. }
+        | Event::TickCompleted { .. } => 0,
     }
 }
 
 pub fn event_c(event: &Event) -> i32 {
     match event {
+        Event::PlayerMoved { y, .. } => *y,
+        Event::EntityPlaced { x, .. } => *x,
+        Event::TileMined { item, .. } => *item as i32,
+        Event::MachineProduced { count, .. } => *count as i32,
+        _ => 0,
+    }
+}
+
+pub fn event_d(event: &Event) -> i32 {
+    match event {
+        Event::EntityPlaced { y, .. } => *y,
         Event::TileMined { count, .. } => *count as i32,
         _ => 0,
     }
+}
+
+pub fn apply_demo_script(server: &mut GameServer) {
+    for step in 0..6i32 {
+        server.apply_intent(0, Intent::new(IntentKind::PlaceBelt, 4 + step, 4, 0));
+    }
+    server.apply_intent(0, Intent::new(IntentKind::PlaceInserter, 10, 4, 0));
+    server.apply_intent(0, Intent::new(IntentKind::PlaceMachine, 11, 4, 1));
+    server.apply_intent(0, Intent::new(IntentKind::PlaceMachine, 16, 4, 0));
 }
 
 pub fn run_headless(config: ServerConfig, ticks: u64) -> u64 {

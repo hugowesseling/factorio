@@ -27,10 +27,11 @@ import { requireElement } from "./ui/dom";
 import { Hud } from "./ui/hud";
 import { Hotbar, machineEntry, type HotbarEntry } from "./ui/hotbar";
 import { drawMinimap, MINIMAP_TILES, renderInventory, renderTooltip } from "./ui/panels";
+import { describeError, diag, diagReady, diagState } from "./ui/diagnostics";
 
 const DEFAULT_SEED = 1;
 const LOCAL_PLAYER = 0;
-const SERVER_URL = "ws://127.0.0.1:9000/ws";
+const DEFAULT_SERVER_URL = "ws://127.0.0.1:9000/ws";
 
 interface HotbarState {
   readonly entries: readonly HotbarEntry[];
@@ -38,25 +39,35 @@ interface HotbarState {
   readonly counts: ReadonlyMap<number, number>;
 }
 
+diag("info", "booting client");
+diagState("booting…");
+
 const seed = readSeedFromUrl() ?? DEFAULT_SEED;
+const serverUrl = readServerFromUrl() ?? DEFAULT_SERVER_URL;
+const autoConnect = new URLSearchParams(window.location.search).get("connect") !== "0";
+diag("info", `world seed ${seed}, server ${serverUrl}, autoConnect ${autoConnect}`);
 const world = new WorldStore(seed);
-const demo = new DemoSim(world);
+let demo = new DemoSim(world);
+let inDemoWorld = true;
 buildDemoScene(world);
+diag("ok", "demo world generated");
 
 const camera = createCamera(window.innerWidth, window.innerHeight);
 camera.scale = 0.25;
-centerOnPlayer();
 
 const canvas = requireElement<HTMLCanvasElement>("stage");
 const minimapCanvas = requireElement<HTMLCanvasElement>("minimap-canvas");
 const alerts = requireElement("alerts");
 
-let renderer: Renderer;
+let renderer: Renderer | null = null;
 try {
   renderer = new Renderer(canvas);
+  diag("ok", "WebGL2 renderer initialized");
 } catch (error) {
+  renderer = null;
+  diag("error", `renderer failed: ${describeError(error)}`);
+  diag("warn", "continuing in HUD-only mode so diagnostics and networking keep working");
   showFatal(error);
-  throw error;
 }
 
 const hotbarState = new Store<HotbarState>({ entries: [], selected: 0, counts: new Map() });
@@ -67,9 +78,10 @@ const demoMode = new Store(true);
 const predictor = new MovePredictor({ x: LAYOUT.spawn.x, y: LAYOUT.spawn.y }, pos =>
   world.entityAt(pos) !== undefined || !world.isSelectable(pos),
 );
+centerOnPlayer();
 
 const clock = new SnapshotClock();
-const connection: Connection = createConnection(SERVER_URL, `client-${Math.floor(Math.random() * 1000)}`);
+const connection: Connection = createConnection(serverUrl, `client-${Math.floor(Math.random() * 1000)}`);
 const hud = new Hud({
   connection: requireElement("hud-status"),
   connectionDetail: requireElement("hud-detail"),
@@ -99,6 +111,7 @@ const tooltip = {
 
 const input = new InputController({
   target: canvas,
+  keyTarget: window,
   camera,
   onHotbar: slot => {
     hotbarState.update(current => ({ ...current, selected: slot }));
@@ -116,20 +129,53 @@ const input = new InputController({
 });
 
 connection.onMessage = message => {
-  demoMode.set(false);
+  if (message.tag === "hello") {
+    enterLiveWorld(message.seed);
+    world.pushEvent(`connected to ${serverUrl}`);
+  } else {
+    inDemoWorld = false;
+    demoMode.set(false);
+  }
   if (message.tag === "event") {
     removeEntityFromEvent(world, message);
   }
   applyServerMessage(world, clock, message);
 };
-connection.onOpen = () => {
-  demoMode.set(false);
-  world.pushEvent(`connected to ${SERVER_URL}`);
-};
 connection.onClose = () => {
-  demoMode.set(true);
+  enterDemoWorld();
   world.pushEvent("server connection lost, running the demo world");
+  diag("warn", "disconnected from the server, running the demo world");
 };
+
+let lastConnectionKey = "";
+connection.info.subscribe(info => {
+  const key = `${info.state}|${info.attempt}|${info.lastError ?? ""}|${info.nextRetryMs ?? ""}`;
+  if (key === lastConnectionKey) {
+    return;
+  }
+  lastConnectionKey = key;
+  const detail = info.lastError === null ? "" : `: ${info.lastError}`;
+  const retry = info.nextRetryMs === null ? "" : ` (retry in ${info.nextRetryMs} ms)`;
+  const level = info.state === "open" ? "ok" : info.state === "failed" ? "error" : "info";
+  diag(level, `connection ${info.state}${detail}${retry}`);
+});
+diag("info", `input attached (keyboard on window, pointer on canvas)`);
+
+function enterDemoWorld(): void {
+  world.reset(seed);
+  buildDemoScene(world);
+  demo = new DemoSim(world);
+  inDemoWorld = true;
+  demoMode.set(true);
+}
+
+function enterLiveWorld(serverSeed: number): void {
+  if (inDemoWorld || world.seed !== serverSeed) {
+    world.reset(serverSeed);
+  }
+  inDemoWorld = false;
+  demoMode.set(false);
+}
 
 initHotbar();
 syncChunkResidency();
@@ -137,11 +183,16 @@ hotbarState.subscribe(() => renderHotbar());
 renderHotbar();
 renderInventory(inventory, inventoryCounts());
 
+if (autoConnect) {
+  connection.connect();
+}
+
 let previousFrame = performance.now();
 let accumulator = 0;
 let fps = 0;
 let frames = 0;
 let fpsClock = previousFrame;
+let announcedReady = false;
 
 requestAnimationFrame(frame);
 
@@ -155,20 +206,22 @@ function frame(now: number): void {
     step();
   }
 
-  renderer.resize(camera);
   const hover = input.hoveredTile;
   clock.sample();
-  renderer.render(
-    {
-      world,
-      camera,
-      hover,
-      selected: selected.value,
-      showGrid: showGrid.value,
-      localPlayer: LOCAL_PLAYER,
-    },
-    visibleTileBounds(camera, 1),
-  );
+  if (renderer !== null) {
+    renderer.resize(camera);
+    renderer.render(
+      {
+        world,
+        camera,
+        hover,
+        selected: selected.value,
+        showGrid: showGrid.value,
+        localPlayer: LOCAL_PLAYER,
+      },
+      visibleTileBounds(camera, 1),
+    );
+  }
 
   frames += 1;
   if (now - fpsClock >= 500) {
@@ -185,6 +238,12 @@ function frame(now: number): void {
     localPlayer: LOCAL_PLAYER,
   });
   updateUi(hover);
+
+  if (!announcedReady) {
+    announcedReady = true;
+    diag("ok", renderer === null ? "render loop running (no WebGL2)" : "render loop running");
+    diagReady();
+  }
 
   requestAnimationFrame(frame);
 }
@@ -420,6 +479,11 @@ function readSeedFromUrl(): number | null {
   }
   const parsed = Number.parseInt(raw, 10);
   return Number.isInteger(parsed) ? parsed : null;
+}
+
+function readServerFromUrl(): string | null {
+  const raw = new URLSearchParams(window.location.search).get("server");
+  return raw !== null && raw.length > 0 ? raw : null;
 }
 
 function showFatal(error: unknown): void {

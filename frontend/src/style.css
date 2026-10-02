@@ -40,6 +40,7 @@ body {
 #ui section,
 #ui .badge,
 #hud-events,
+#console,
 #tooltip {
   pointer-events: auto;
 }
@@ -253,6 +254,88 @@ body {
   border-radius: 4px;
   padding: 6px 10px;
   max-width: 60vw;
+}
+
+#console {
+  position: absolute;
+  left: 10px;
+  bottom: 150px;
+  width: min(440px, 46vw);
+  max-height: 38vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+#console.is-closed {
+  width: auto;
+}
+
+#console.is-closed #console-log {
+  display: none;
+}
+
+#console-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+#console.is-closed #console-head {
+  border-bottom: none;
+}
+
+#console-title {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+#console-state {
+  margin-left: auto;
+  color: var(--subtle);
+}
+
+#console-toggle {
+  background: transparent;
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  color: var(--subtle);
+  font: inherit;
+  font-size: 11px;
+  padding: 1px 6px;
+}
+
+#console-log {
+  margin: 0;
+  padding: 6px 8px;
+  overflow-y: auto;
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.console-line {
+  color: var(--subtle);
+}
+
+.console-line.ok {
+  color: var(--ok);
+}
+
+.console-line.warn {
+  color: #e0b341;
+}
+
+.console-line.error {
+  color: var(--accent);
 }
 
 noscript {

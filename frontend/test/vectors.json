@@ -18,7 +18,7 @@
     "ping": "03b1d1f9d603",
     "server_hello": "01012a",
     "server_snapshot": "02d804effdb6f50d",
-    "server_event": "030703010012",
+    "server_event": "03070301001253",
     "server_pong": "040c"
 
   },

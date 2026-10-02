@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Factorio — client</title>
-    <script type="module" crossorigin src="/assets/index-rGEWrYjF.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-D4RgUkgP.css">
+    <script type="module" crossorigin src="/assets/index-dhe6fkjL.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Cua6_69o.css">
   </head>
   <body>
     <canvas id="stage"></canvas>
@@ -73,8 +73,144 @@
       </div>
 
       <div id="alerts"></div>
+
+      <div id="console">
+        <div id="console-head">
+          <span id="console-title">diagnostics</span>
+          <span id="console-state">booting…</span>
+          <button id="console-toggle" type="button">hide</button>
+        </div>
+        <div id="console-log" role="log" aria-live="polite"></div>
+      </div>
     </div>
 
     <noscript>This client needs JavaScript and WebGL2.</noscript>
+
+    <script>
+      (function () {
+        var root = document.getElementById("console");
+        var logEl = document.getElementById("console-log");
+        var stateEl = document.getElementById("console-state");
+        var toggleEl = document.getElementById("console-toggle");
+        var MAX_LINES = 250;
+        var booted = false;
+
+        function stamp() {
+          var now = new Date();
+          function pad(value) {
+            return String(value).padStart(2, "0");
+          }
+          return pad(now.getHours()) + ":" + pad(now.getMinutes()) + ":" + pad(now.getSeconds());
+        }
+
+        function append(level, text) {
+          if (logEl === null) {
+            return;
+          }
+          var line = document.createElement("div");
+          line.className = "console-line " + level;
+          line.textContent = stamp() + "  " + text;
+          logEl.appendChild(line);
+          while (logEl.childNodes.length > MAX_LINES) {
+            logEl.removeChild(logEl.firstChild);
+          }
+          logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function setState(text) {
+          if (stateEl !== null) {
+            stateEl.textContent = text;
+          }
+        }
+
+        var api = {
+          log: function (level, text) {
+            append(level || "info", String(text));
+          },
+          state: setState,
+          ready: function () {
+            booted = true;
+            setState("running");
+          },
+          toggle: function () {
+            if (root === null) {
+              return;
+            }
+            var closed = root.classList.toggle("is-closed");
+            if (toggleEl !== null) {
+              toggleEl.textContent = closed ? "show" : "hide";
+            }
+          },
+          clear: function () {
+            if (logEl !== null) {
+              logEl.replaceChildren();
+            }
+          },
+        };
+        window.__factorioConsole = api;
+
+        if (toggleEl !== null) {
+          toggleEl.addEventListener("click", api.toggle);
+        }
+        window.addEventListener("keydown", function (event) {
+          if (event.key === "F1") {
+            event.preventDefault();
+            api.toggle();
+          }
+        });
+
+        ["log", "info", "warn", "error"].forEach(function (name) {
+          var original = console[name].bind(console);
+          console[name] = function () {
+            var parts = Array.prototype.map.call(arguments, function (value) {
+              if (typeof value === "string") {
+                return value;
+              }
+              try {
+                return JSON.stringify(value);
+              } catch (error) {
+                return String(value);
+              }
+            });
+            append(name === "warn" || name === "error" ? name : "info", parts.join(" "));
+            original.apply(console, arguments);
+          };
+        });
+
+        window.addEventListener("error", function (event) {
+          var where = event.filename ? " (" + event.filename + ":" + event.lineno + ")" : "";
+          append("error", "uncaught error: " + (event.message || "unknown") + where);
+          setState("error");
+        });
+        window.addEventListener("unhandledrejection", function (event) {
+          var reason = event.reason && event.reason.message ? event.reason.message : String(event.reason);
+          append("error", "unhandled rejection: " + reason);
+          setState("error");
+        });
+
+        append("info", "user agent: " + navigator.userAgent);
+        try {
+          var probe = document.createElement("canvas");
+          if (probe.getContext("webgl2") !== null) {
+            append("ok", "WebGL2 is available");
+          } else {
+            append("error", "WebGL2 is NOT available in this browser");
+          }
+        } catch (error) {
+          append("error", "WebGL2 probe failed: " + error);
+        }
+        append("info", "opened from: " + window.location.href);
+        append("info", "press F1 to hide or show this panel");
+
+        window.setTimeout(function () {
+          if (!booted) {
+            append("warn", "the app script has not reported ready after 4s");
+            append("warn", "check the terminal running run.sh, and open the dev URL it prints (usually http://127.0.0.1:5173)");
+            setState("app not started");
+          }
+        }, 4000);
+      })();
+    </script>
+
   </body>
 </html>

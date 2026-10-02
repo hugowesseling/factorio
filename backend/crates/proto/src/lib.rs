@@ -114,7 +114,7 @@ impl ClientMessage {
 pub enum ServerMessage {
     Hello { version: u32, seed: u64 },
     Snapshot { tick: u64, hash: u64 },
-    Event { tick: u64, code: u8, a: i32, b: i32, c: i32 },
+    Event { tick: u64, code: u8, a: i32, b: i32, c: i32, d: i32 },
     Pong { stamp: u64 },
 }
 
@@ -132,13 +132,14 @@ impl ServerMessage {
                 writer.varint(*tick);
                 writer.varint(*hash);
             }
-            ServerMessage::Event { tick, code, a, b, c } => {
+            ServerMessage::Event { tick, code, a, b, c, d } => {
                 writer.u8(3);
                 writer.varint(*tick);
                 writer.u8(*code);
                 writer.i32(*a);
                 writer.i32(*b);
                 writer.i32(*c);
+                writer.i32(*d);
             }
             ServerMessage::Pong { stamp } => {
                 writer.u8(4);
@@ -160,6 +161,7 @@ impl ServerMessage {
                 a: reader.i32()?,
                 b: reader.i32()?,
                 c: reader.i32()?,
+                d: reader.i32()?,
             },
             4 => ServerMessage::Pong { stamp: reader.varint()? },
             _ => return Err("bad server tag"),
@@ -333,7 +335,7 @@ mod tests {
         let messages = [
             ServerMessage::Hello { version: PROTOCOL_VERSION, seed: 42 },
             ServerMessage::Snapshot { tick: 600, hash: 0xdead_beef },
-            ServerMessage::Event { tick: 7, code: 3, a: -1, b: 0, c: 9 },
+            ServerMessage::Event { tick: 7, code: 3, a: -1, b: 0, c: 9, d: -42 },
             ServerMessage::Pong { stamp: 12 },
         ];
         for message in messages.iter() {

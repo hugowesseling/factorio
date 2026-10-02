@@ -101,6 +101,36 @@ describe("Hud", () => {
     expect(elements.connection.classList.contains("is-open")).toBe(true);
   });
 
+  it("explains the offline demo world instead of looking broken", () => {
+    const elements = hudElements();
+    new Hud(elements).update({ ...base, demo: true });
+    expect(elements.connection.textContent).toBe("demo");
+    expect(elements.connectionDetail.textContent).toBe("offline demo world, press C to connect a server");
+    expect(elements.connection.classList.contains("is-error")).toBe(false);
+    expect(elements.mode.textContent).toBe("demo");
+  });
+
+  it("still reports a real connection failure while live", () => {
+    const elements = hudElements();
+    new Hud(elements).update({
+      ...base,
+      demo: false,
+      connection: connection({ state: "failed", attempt: 4 }),
+    });
+    expect(elements.connection.textContent).toBe("failed");
+    expect(elements.mode.textContent).toBe("live");
+  });
+
+  it("shows the tick and an elapsed clock", () => {
+    const elements = hudElements();
+    new Hud(elements).update({
+      ...base,
+      stats: { tick: 90_000, hash: 0, powerProduced: 0, powerConsumed: 0 },
+    });
+    expect(elements.tick.textContent).toBe("tick 90.0k");
+    expect(elements.tickClock.textContent).toBe("1500:00");
+  });
+
   it("shows round trip time once it is known", () => {
     const elements = hudElements();
     new Hud(elements).update({

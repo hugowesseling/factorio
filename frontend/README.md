@@ -25,10 +25,10 @@ Add `?seed=1234` to the URL to generate a different world.
 
 ## What you can do without a server
 
-The backend has no network listener yet, so the client boots into a demo world:
-the real terrain generator on a fixed seed, a small factory layout, and a fixed
-60 Hz tick that moves items along the belts. Movement is predicted locally, and
-power, tick and FPS readouts come from the demo tick.
+By default the client boots into a demo world: the real terrain generator on a
+fixed seed, a small factory layout, and a fixed 60 Hz tick that moves items along
+the belts. Movement is predicted locally, and power, tick and FPS readouts come
+from the demo tick.
 
 | Input | Action |
 | --- | --- |
@@ -44,10 +44,33 @@ power, tick and FPS readouts come from the demo tick.
 | Wheel | zoom |
 | `Esc` | clear the selection |
 
-Pressing `C` attempts a WebSocket connection to `ws://127.0.0.1:9000/ws`. While
-it is down the client stays in demo mode; intents are not queued to be replayed
-as world state, because placement and mining are only ever decided by the
-server.
+On load the client connects automatically to `ws://127.0.0.1:9000/ws`, which is
+where the backend listens when you start it with `cargo run -p
+factorio-server -- --serve` (or just `./run.sh`). Pressing `C` toggles the
+connection; while no server is reachable the client keeps running the demo world,
+so the page is never blank. Intents are not queued to be replayed as world state,
+because placement and mining are only ever decided by the server.
+
+On a successful handshake the client adopts the server's seed and rebuilds
+terrain from it, so both halves generate the same world, then follows the
+authoritative tick from snapshots and sends intents (move, place, mine, remove).
+
+`?connect=0` disables the automatic connection and `?server=ws://host:port/ws`
+points the client at a different listener.
+
+## Diagnostics console
+
+A small on-page console sits at the bottom left. It captures `console.*`,
+uncaught errors, unhandled rejections and boot-stage messages, probes for WebGL2,
+and prints the URL the page was opened from. It starts visible; press `F1` (or
+use the hide button) to collapse it. If the app script never runs — for example
+when opening `dist/index.html` over `file://` — the console warns that the app
+did not start after a few seconds instead of leaving a silent page.
+
+The keyboard is captured on `window`, not on the canvas, so movement and hotbar
+keys work as soon as the page has focus. Pointer events stay on the canvas. If
+WebGL2 is unavailable the renderer failure is logged and the client keeps running
+HUD-only rather than aborting before input and networking are wired.
 
 ## Layout
 
@@ -78,6 +101,7 @@ src/
     hud.ts            tick, power, position, connection, event log
     hotbar.ts         ten build slots
     panels.ts         inventory, tooltip, minimap
+    diagnostics.ts    typed bridge to the in-page console
     dom.ts            small DOM helpers
 test/
   vectors.json        generated fixtures: protocol bytes, RNG, terrain, content
@@ -110,11 +134,13 @@ Item names, machine footprints and power limits come from
   into game state.
 - The 64-bit seed mixing in `sim/rng.ts` uses `BigInt`. Plain numbers cannot hold
   the chunk keys the backend uses.
-- `EventCode` in `net/snapshot.ts` is a client-side convention: the wire format
-  carries three event arguments, which cannot losslessly describe every backend
-  event (`EntityPlaced` and `TileMined` need four values). Event text shown in
-  the HUD, and the `y` coordinate applied on placement, are therefore provisional
-  until the backend publishes a real event schema.
+- Server events carry four signed arguments (`a`, `b`, `c`, `d`) in
+  `net/protocol.ts`. The backend maps each `sim::Event` onto those four slots in
+  `crates/server/src/lib.rs` (`event_a`…`event_d`); for example `EntityPlaced` is
+  `a=kind, b=index, c=x, d=y` and `TileMined` is `a=x, b=y, c=item, d=count`.
+  `net/snapshot.ts` decodes the same layout, so placed entities land on their real
+  coordinates.
 - The renderer is untested against a real GPU here; geometry, projection and
   colour selection are covered by unit tests, and everything else is verified by
-  `npm run build` and `npm run typecheck`.
+  `npm run build` and `npm run typecheck`. If WebGL2 cannot start, the failure is
+  surfaced in the diagnostics console and the app continues in HUD-only mode.
