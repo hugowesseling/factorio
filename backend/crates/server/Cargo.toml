@@ -1,0 +1,19 @@
+[package]
+name = "factorio-server"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "factorio_server"
+
+[[bin]]
+name = "factorio-server"
+path = "src/main.rs"
+
+[dependencies]
+factorio-sim = { path = "../sim" }
+factorio-content = { path = "../content" }
+factorio-world = { path = "../world" }
+factorio-proto = { path = "../proto" }
+factorio-net = { path = "../net" }
+factorio-persistence = { path = "../persistence" }

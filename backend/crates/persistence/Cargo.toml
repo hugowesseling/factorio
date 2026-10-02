@@ -1,0 +1,11 @@
+[package]
+name = "factorio-persistence"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "factorio_persistence"
+
+[dependencies]
+factorio-sim = { path = "../sim" }
+factorio-content = { path = "../content" }

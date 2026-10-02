@@ -1,0 +1,24 @@
+[technology.burner]
+name = "Burner"
+cost = 0
+prerequisites = []
+
+[technology.stone_furnace]
+name = "Stone furnace"
+cost = 0
+prerequisites = ["burner"]
+
+[technology.assembler]
+name = "Assembler"
+cost = 100
+prerequisites = ["stone_furnace"]
+
+[technology.offshore_pump]
+name = "Offshore pump"
+cost = 50
+prerequisites = ["burner"]
+
+[technology.lab]
+name = "Lab"
+cost = 100
+prerequisites = ["stone_furnace"]

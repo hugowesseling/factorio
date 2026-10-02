@@ -1,0 +1,9 @@
+{
+  "items": [[0, "coal", 9999, "Coal"], [1, "copper_ore", 9999, "Copper ore"], [2, "copper_plate", 9999, "Copper plate"], [3, "gear", 9999, "Gear"], [4, "metal_ore", 9999, "Metal ore"], [5, "metal_plate", 9999, "Metal plate"], [6, "science_pack", 9999, "Science pack"], [7, "stone_brick", 9999, "Stone brick"], [8, "stone_ore", 9999, "Stone"], [9, "water", 9999, "Water"]],
+  "machines": [[0, "burner_generator", 1, 1, 5000], [1, "stone_furnace", 2, 2, 0], [2, "assembler", 3, 3, 900000], [3, "offshore_pump", 1, 1, 0], [4, "lab", 3, 3, 600000]],
+  "belts": [[0, "transport", 30]],
+  "inserters": [[0, "inserter", 30], [1, "fast_inserter", 12]],
+  "recipes": [[0, "copper_plate"], [1, "gear"], [2, "metal_plate"], [3, "science_pack"], [4, "stone_brick"]],
+  "technologies": [[0, "assembler"], [1, "burner"], [2, "lab"], [3, "offshore_pump"], [4, "stone_furnace"]],
+  "resourceItems": [4, 1, 8, 0]
+}

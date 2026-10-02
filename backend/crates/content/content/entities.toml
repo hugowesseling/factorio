@@ -1,0 +1,47 @@
+[entities.transport_belt]
+name = "Transport belt"
+kind = "belt"
+prototype = 0
+size = [1, 1]
+
+[entities.burner_generator]
+name = "Burner generator"
+kind = "machine"
+prototype = 0
+size = [1, 1]
+
+[entities.stone_furnace]
+name = "Stone furnace"
+kind = "machine"
+prototype = 1
+size = [2, 2]
+
+[entities.assembler]
+name = "Assembler"
+kind = "machine"
+prototype = 2
+size = [3, 3]
+
+[entities.offshore_pump]
+name = "Offshore pump"
+kind = "machine"
+prototype = 3
+size = [1, 1]
+
+[entities.lab]
+name = "Lab"
+kind = "machine"
+prototype = 4
+size = [3, 3]
+
+[entities.inserter]
+name = "Inserter"
+kind = "inserter"
+prototype = 0
+size = [1, 1]
+
+[entities.player]
+name = "Player"
+kind = "player"
+prototype = 0
+size = [1, 1]

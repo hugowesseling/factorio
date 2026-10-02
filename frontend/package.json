@@ -1,0 +1,21 @@
+{
+  "name": "factorio-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "WebGL2 client for the Factorio backend: renders the world, reads input, predicts movement locally",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "happy-dom": "^20.14.5",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.6",
+    "vitest": "^3.2.7"
+  }
+}

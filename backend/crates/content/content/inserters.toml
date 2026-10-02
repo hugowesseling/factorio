@@ -1,0 +1,9 @@
+[inserters.inserter]
+name = "Inserter"
+prototype = 0
+swing_ticks = 30
+
+[inserters.fast_inserter]
+name = "Fast inserter"
+prototype = 1
+swing_ticks = 12

@@ -1,0 +1,54 @@
+[machines.burner_generator]
+name = "Burner generator"
+prototype = 0
+size = [1, 1]
+components = ["machine", "power_producer", "collision"]
+categories = ["power"]
+energy_usage = 0
+max_power = 5000
+fuel = 0
+recipe = 65535
+
+[machines.stone_furnace]
+name = "Stone furnace"
+prototype = 1
+size = [2, 2]
+components = ["machine", "collision"]
+categories = ["smelting"]
+energy_usage = 0
+max_power = 0
+fuel = 0
+recipe = 0
+
+[machines.assembler]
+name = "Assembler"
+prototype = 2
+size = [3, 3]
+components = ["machine", "power_consumer", "collision"]
+categories = ["crafting"]
+energy_usage = 90000
+max_power = 900000
+fuel = 0
+recipe = 3
+
+[machines.offshore_pump]
+name = "Offshore pump"
+prototype = 3
+size = [1, 1]
+components = ["machine", "collision"]
+categories = ["pumping"]
+energy_usage = 0
+max_power = 0
+fuel = 0
+recipe = 65535
+
+[machines.lab]
+name = "Lab"
+prototype = 4
+size = [3, 3]
+components = ["machine", "power_consumer", "collision"]
+categories = ["research"]
+energy_usage = 60000
+max_power = 600000
+fuel = 0
+recipe = 65535

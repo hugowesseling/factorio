@@ -1,0 +1,39 @@
+[item.metal_ore]
+name = "Metal ore"
+max_stack = 9999
+
+[item.copper_ore]
+name = "Copper ore"
+max_stack = 9999
+
+[item.stone_ore]
+name = "Stone"
+max_stack = 9999
+
+[item.coal]
+name = "Coal"
+max_stack = 9999
+
+[item.water]
+name = "Water"
+max_stack = 9999
+
+[item.metal_plate]
+name = "Metal plate"
+max_stack = 9999
+
+[item.copper_plate]
+name = "Copper plate"
+max_stack = 9999
+
+[item.stone_brick]
+name = "Stone brick"
+max_stack = 9999
+
+[item.gear]
+name = "Gear"
+max_stack = 9999
+
+[item.science_pack]
+name = "Science pack"
+max_stack = 9999

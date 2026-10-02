@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Factorio — client</title>
+    <script type="module" crossorigin src="/assets/index-rGEWrYjF.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-D4RgUkgP.css">
+  </head>
+  <body>
+    <canvas id="stage"></canvas>
+
+    <div id="ui">
+      <div id="hud">
+        <span id="hud-mode" class="badge">demo</span>
+        <span id="hud-status" class="badge">idle</span>
+        <span id="hud-detail" class="badge subtle">not connected</span>
+        <span id="hud-tick" class="badge">tick 0</span>
+        <span id="hud-clock" class="badge subtle">0:00</span>
+        <span id="hud-power" class="badge">0 / 0 W</span>
+        <span id="hud-position" class="badge">0, 0</span>
+        <span id="hud-chunks" class="badge subtle">0 chunks</span>
+        <span id="hud-fps" class="badge subtle">– fps</span>
+        <span id="hud-hover" class="badge subtle is-hidden"></span>
+      </div>
+
+      <pre id="hud-events"></pre>
+
+      <div id="minimap">
+        <canvas id="minimap-canvas" width="220" height="220"></canvas>
+      </div>
+
+      <div id="tooltip" class="is-hidden">
+        <strong id="tooltip-title"></strong>
+        <span id="tooltip-body"></span>
+      </div>
+
+      <div id="bottom">
+        <section id="inventory">
+          <h2>Inventory</h2>
+          <div id="inventory-slots"></div>
+        </section>
+
+        <section id="hotbar"></section>
+
+        <section id="controls">
+          <h2>Controls</h2>
+          <dl>
+            <dt>WASD / arrows</dt>
+            <dd>move, predicted locally</dd>
+            <dt>1 – 0</dt>
+            <dd>select hotbar slot</dd>
+            <dt>F / V</dt>
+            <dd>cycle build item</dd>
+            <dt>R / Space</dt>
+            <dd>rotate</dd>
+            <dt>Q</dt>
+            <dd>mine the tile under the cursor</dd>
+            <dt>Right click</dt>
+            <dd>remove</dd>
+            <dt>G</dt>
+            <dd>toggle the tile grid</dd>
+            <dt>C</dt>
+            <dd>connect or disconnect</dd>
+            <dt>Middle or shift drag</dt>
+            <dd>pan</dd>
+            <dt>Wheel</dt>
+            <dd>zoom</dd>
+            <dt>Esc</dt>
+            <dd>clear the selection</dd>
+          </dl>
+        </section>
+      </div>
+
+      <div id="alerts"></div>
+    </div>
+
+    <noscript>This client needs JavaScript and WebGL2.</noscript>
+  </body>
+</html>

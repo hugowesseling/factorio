@@ -1,0 +1,4 @@
+[belts.transport]
+name = "Transport belt"
+prototype = 0
+speed_ticks = 30
