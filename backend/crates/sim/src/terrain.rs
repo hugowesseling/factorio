@@ -129,6 +129,58 @@ impl Default for TerrainChunk {
     }
 }
 
+fn floor_div(a: i32, b: i32) -> i32 {
+    let q = a / b;
+    if a % b != 0 && (a < 0) != (b < 0) {
+        q - 1
+    } else {
+        q
+    }
+}
+
+fn hash_corner(seed: u32, x: i32, y: i32) -> u32 {
+    let mut h = seed;
+    h ^= (x as u32).wrapping_mul(0x9e37_79b1);
+    h = h.rotate_left(13);
+    h ^= (y as u32).wrapping_mul(0x85eb_ca77);
+    h = h.rotate_left(17);
+    h ^= h >> 15;
+    h = h.wrapping_mul(0x2c1b_3c6d);
+    h ^= h >> 12;
+    h = h.wrapping_mul(0x297a_2d39);
+    h ^= h >> 15;
+    h
+}
+
+fn smoothstep(value: u32) -> u32 {
+    let t = value as u64;
+    let t2 = (t * t) >> 16;
+    let t3 = (t2 * t) >> 16;
+    let blended = 3 * t2 as i64 - 2 * t3 as i64;
+    blended.clamp(0, 65535) as u32
+}
+
+fn lerp16(a: u32, b: u32, t: u32) -> u32 {
+    let delta = b as i64 - a as i64;
+    (a as i64 + ((delta * t as i64) >> 16)) as u32
+}
+
+pub fn value_noise(seed: u32, x: i32, y: i32, cell: i32) -> u32 {
+    let cx = floor_div(x, cell);
+    let cy = floor_div(y, cell);
+    let fx = (x - cx * cell) as u32;
+    let fy = (y - cy * cell) as u32;
+    let tx = smoothstep((fx * 65536) / cell as u32);
+    let ty = smoothstep((fy * 65536) / cell as u32);
+    let v00 = hash_corner(seed, cx, cy) >> 16;
+    let v10 = hash_corner(seed, cx + 1, cy) >> 16;
+    let v01 = hash_corner(seed, cx, cy + 1) >> 16;
+    let v11 = hash_corner(seed, cx + 1, cy + 1) >> 16;
+    let top = lerp16(v00, v10, tx);
+    let bottom = lerp16(v01, v11, tx);
+    lerp16(top, bottom, ty)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

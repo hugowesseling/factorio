@@ -23,7 +23,7 @@ use crate::power::{
     satisfaction, POWER_RATIO_FULL,
 };
 use crate::rng::{fnv_update, Pcg32, FNV_OFFSET};
-use crate::terrain::{Resource, TerrainChunk, TileData};
+use crate::terrain::{value_noise, Resource, TerrainChunk, TileData};
 use crate::tick::Phase;
 use crate::{Inserter, DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST};
 
@@ -1140,20 +1140,35 @@ impl World {
     }
 }
 
+const ORE_CELL: i32 = 36;
+const TYPE_CELL: i32 = 36;
+const WATER_CELL: i32 = 40;
+const ORE_LEVEL: u32 = 54_000;
+const WATER_LEVEL: u32 = 60_000;
+
 pub fn generate_chunk(seed: u64, chunk: ChunkPos) -> TerrainChunk {
-    let mut rng = Pcg32::new(seed ^ chunk.key().wrapping_mul(0x9e3779b97f4a7c15).rotate_left(17));
+    let base = (seed as u32)
+        .wrapping_mul(0x9e37_79b1)
+        ^ ((seed >> 32) as u32).wrapping_mul(0x85eb_ca77);
+    let ore_seed = base ^ 0x4f52_455f;
+    let type_seed = base ^ 0x5459_5045;
+    let water_seed = base ^ 0x5741_5452;
+
     let mut data = TerrainChunk::new();
     let origin = chunk_origin(chunk);
     for dx in 0..CHUNK_SIZE {
         for dy in 0..CHUNK_SIZE {
             let pos = origin.add(dx, dy);
-            let roll = rng.next_u32();
-            if roll % 29 == 0 {
+            if value_noise(water_seed, pos.x, pos.y, WATER_CELL) > WATER_LEVEL {
                 data.set_water(chunk, pos);
-            } else {
-                let resource = ((roll / 29) % Resource::COUNT as u32) as u8;
-                let amount = 200u16.saturating_add((rng.next_u32() % 300) as u16);
-                data.set_ore(chunk, pos, resource, amount);
+                continue;
+            }
+            let richness = value_noise(ore_seed, pos.x, pos.y, ORE_CELL);
+            if richness > ORE_LEVEL {
+                let kind = (value_noise(type_seed, pos.x, pos.y, TYPE_CELL) >> 14) as u8;
+                let strength = (richness - ORE_LEVEL) as u64;
+                let amount = (200 + strength * 400 / (65535 - ORE_LEVEL) as u64) as u16;
+                data.set_ore(chunk, pos, kind, amount);
             }
         }
     }
@@ -1312,9 +1327,15 @@ mod tests {
         panic!("no ore found");
     }
 
-    fn find_water(world: &World, from: i32) -> Option<TilePos> {
-        for y in from..60 {
-            for x in 1..60 {
+    fn find_water(world: &mut World) -> Option<TilePos> {
+        let reach = 160;
+        for cx in (-reach / CHUNK_SIZE - 1)..=(reach / CHUNK_SIZE + 1) {
+            for cy in (-reach / CHUNK_SIZE - 1)..=(reach / CHUNK_SIZE + 1) {
+                world.ensure_chunk(ChunkPos { x: cx, y: cy });
+            }
+        }
+        for y in -reach..reach {
+            for x in -reach..reach {
                 let pos = TilePos { x, y };
                 if world.terrain_tile(pos).water {
                     return Some(pos);
@@ -1400,7 +1421,7 @@ mod tests {
     #[test]
     fn player_cannot_walk_into_water() {
         let mut world = World::new(11);
-        let water = find_water(&world, 1).expect("water tile");
+        let water = find_water(&mut world).expect("water tile");
         let stand = TilePos { x: water.x, y: water.y - 1 };
         clear_rect(&mut world, stand, 3);
         world.edit_tile(water, |data, chunk| {
@@ -1534,7 +1555,7 @@ mod tests {
     #[test]
     fn offshore_pump_clears_water_flag_once() {
         let mut world = World::new(71);
-        let pos = find_water(&world, 4).expect("water tile");
+        let pos = find_water(&mut world).expect("water tile");
         let water = world.item_id("water");
         let index = world.place_machine(pos, MACHINE_OFFSHORE_PUMP).unwrap();
         world.tick();

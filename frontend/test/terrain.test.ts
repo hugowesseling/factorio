@@ -97,12 +97,16 @@ describe("generateChunk", () => {
       const generated = generateChunk(seed, chunk);
       for (let index = 0; index < CHUNK_AREA; index += 1) {
         const water = ((generated.flags[index] as number) & WATER_FLAG) !== 0;
+        const ore = generated.ore[index] as number;
         if (water) {
-          expect(generated.ore[index]).toBe(0);
+          expect(ore).toBe(0);
           expect(generated.resource[index]).toBe(0);
+        } else if (ore > 0) {
+          expect(ore).toBeGreaterThanOrEqual(200);
+          expect(ore).toBeLessThanOrEqual(600);
+          expect(generated.resource[index]).toBeLessThan(4);
         } else {
-          expect(generated.ore[index]).toBeGreaterThanOrEqual(200);
-          expect(generated.ore[index]).toBeLessThan(500);
+          expect(generated.resource[index]).toBe(0);
         }
       }
     }
@@ -119,13 +123,13 @@ describe("generateChunk", () => {
     const generated = generateChunk(7, { x: 0, y: 0 });
     const counts = resourceCounts(generated);
     const sum = counts.reduce((total, value) => total + value, 0);
-    let water = 0;
+    let ore = 0;
     for (let index = 0; index < CHUNK_AREA; index += 1) {
-      if (((generated.flags[index] as number) & WATER_FLAG) !== 0) {
-        water += 1;
+      if ((generated.ore[index] as number) > 0) {
+        ore += 1;
       }
     }
-    expect(sum).toBe(CHUNK_AREA - water);
+    expect(sum).toBe(ore);
   });
 });
 

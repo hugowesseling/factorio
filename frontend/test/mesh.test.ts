@@ -114,8 +114,8 @@ describe("terrainMesh", () => {
   it("paints water tiles with the water colour", () => {
     const world = new WorldStore(7);
     let waterQuad: MeshQuad | undefined;
-    for (let y = -40; y <= 40 && waterQuad === undefined; y += 1) {
-      for (let x = -40; x <= 40; x += 1) {
+    for (let y = -160; y <= 160 && waterQuad === undefined; y += 1) {
+      for (let x = -160; x <= 160; x += 1) {
         if (world.tile({ x, y }).water) {
           waterQuad = tileQuad({ x, y }, groundColor(world.tile({ x, y })));
           break;
